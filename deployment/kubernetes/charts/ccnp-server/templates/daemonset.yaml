@@ -46,6 +46,43 @@ spec:
             failureThreshold: 10
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
+          volumeMounts:
+            - name: proc
+              mountPath: /proc
+            - name: eventlog-entry
+              mountPath: /run/firmware/acpi/tables/CCEL
+            - name: eventlog-data
+              mountPath: /run/firmware/acpi/tables/data/CCEL
+            - name: ima-data
+              mountPath: /run/kernel/security/
+            - name: vsock-port
+              mountPath: /etc/tdx-attest.conf
+            - name: {{ include "ccnp-server.fullname" . }}-config
+              mountPath: /etc/
+        volumes:
+          - name: proc
+            hostPath:
+              path: /proc
+              type: Directory
+          - name: eventlog-data
+            hostPath:
+              path: /sys/firmware/acpi/tables/data/CCEL
+              type: File
+          - name: eventlog-entry
+            hostPath:
+              path: /sys/firmware/acpi/tables/CCEL
+              type: File
+          - name: ima-data
+            hostPath:
+              path: /sys/kernel/security/
+              type: Directory
+          - name: vsock-port
+            hostPath:
+              path: /etc/tdx-attest.conf
+              type: File
+          - name: {{ include "ccnp-server.fullname" . }}-config
+            configMap:
+              name: {{ include "ccnp-server.fullname" . }}-config
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}

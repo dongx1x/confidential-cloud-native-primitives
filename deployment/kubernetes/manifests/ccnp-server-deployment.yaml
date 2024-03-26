@@ -51,6 +51,9 @@ spec:
             mountPath: /run/kernel/security/
           - name: vsock-port
             mountPath: /etc/tdx-attest.conf
+          - name: ccnp-server-config
+            mountPath: /etc/policy.yaml
+            subPath: policy
       volumes:
         - name: proc
           hostPath:
@@ -72,5 +75,39 @@ spec:
           hostPath:
             path: /etc/tdx-attest.conf
             type: File
+        - name: ccnp-server-config
+          configMap:
+            name: ccnp-server-config
+            items:
+              - key: policy_key
+                path: policy
       nodeSelector:
         intel.feature.node.kubernetes.io/tdx-guest: "enabled"
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  namespace: ccnp
+  name: ccnp-server-config
+data:
+  policy_key: |-
+    backend: ima
+    hashAlgorithm: sha384
+    measure:
+    system:
+        withParameter: true
+        processes:
+        - /usr/bin/containerd
+        - /usr/bin/kubelet
+        - /usr/bin/containerd-shim-runc-v2
+    container:
+        isolated: true
+    kubernetes:
+        withParameter: true
+        pods:
+        - kube-apiserver
+        - kube-scheduler
+        - kube-proxy
+        - kube-scheduler
+        - kube-controller-manager
