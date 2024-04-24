@@ -1,6 +1,7 @@
 pub mod agent;
 pub mod container;
 pub mod measurement;
+pub mod pod;
 pub mod policy;
 pub mod service;
 pub mod ccnp_pb {
@@ -12,13 +13,14 @@ pub mod ccnp_pb {
 
 use anyhow::Result;
 use clap::Parser;
-use log::info;
+use log::{info, warn};
 use std::{fs, os::unix::fs::PermissionsExt};
 use tokio::net::UnixListener;
 use tokio_stream::wrappers::UnixListenerStream;
 use tonic::transport::Server;
 
 use ccnp_pb::{ccnp_server::CcnpServer, FILE_DESCRIPTOR_SET};
+use pod::Pod;
 use policy::PolicyConfig;
 use service::Service;
 
@@ -56,6 +58,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let uds_stream = UnixListenerStream::new(uds);
     info!("[ccnp-server]: set sock file permissions: {}", sock);
     set_sock_perm(&sock.clone())?;
+
+    if std::env::var("KUBERNETES_SERVICE_HOST")
+        .map(|s| !s.is_empty())
+        .unwrap_or(false)
+    {
+        std::thread::spawn(|| Pod::patch_ccnp_pods(sock));
+    }
 
     let (mut health_reporter, health_service) = tonic_health::server::health_reporter();
     health_reporter.set_serving::<CcnpServer<Service>>().await;
