@@ -1,0 +1,23 @@
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  name: selfsigned
+  namespace: ccnp
+spec:
+  selfSigned: {}
+
+---
+
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: ccnp-webhook
+  namespace: ccnp
+spec:
+  # remember the secretName
+  secretName: ccnp-webhook-tls
+  dnsNames:
+    # IMPORTANT: format is the following namespace.service-name.svc
+    - ccnp.ccnp-webhook.svc
+  issuerRef:
+    name: selfsigned

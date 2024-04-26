@@ -1,0 +1,30 @@
+apiVersion: admissionregistration.k8s.io/v1
+kind: MutatingWebhookConfiguration
+metadata:
+  name: ccnp-webhook
+  annotations:
+    # IMPORTANT: has to match Certificate namespace.name
+    cert-manager.io/inject-ca-from: ccnp/ccnp-webhook
+webhooks:
+- admissionReviewVersions:
+  - v1
+  clientConfig:
+    service:
+      # has to match the service we created
+      namespace: ccnp
+      name: ccnp-webhook
+      port: 9443
+      path: "/mutate"
+  failurePolicy: Fail
+  name: mpod.kb.io
+  rules:
+  - apiGroups:
+    - ""
+    apiVersions:
+    - v1
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - pods
+  sideEffects: None

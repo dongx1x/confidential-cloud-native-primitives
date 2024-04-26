@@ -1,0 +1,47 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ccnp-webhook
+  namespace: ccnp
+spec:
+  selector:
+    matchLabels:
+      # IMPORTANT
+      app: ccnp-webhook
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        # IMPORTANT
+        app: ccnp-webhook
+    spec:
+      containers:
+      - name: ccnp-webhook
+        image: docker.io/library/pod-webhook:latest
+        imagePullPolicy: IfNotPresent
+        volumeMounts:
+        - name: tls
+          # the tls certificates automatically get mounted into the correct path
+          mountPath: "/tmp/k8s-webhook-server/serving-certs"
+          readOnly: true
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: 8081
+          initialDelaySeconds: 15
+          periodSeconds: 20
+        readinessProbe:
+          httpGet:
+            path: /readyz
+            port: 8081
+          initialDelaySeconds: 5
+          periodSeconds: 10
+      terminationGracePeriodSeconds: 10
+      volumes:
+        - name: tls
+          secret:
+            # IMPORTANT: has to match from Certificate
+            secretName: ccnp-webhook-tls
+            # the pod only gets created if the secret exists
+            # so it waits until the cert-manager is done
+            optional: false
